@@ -1,762 +1,1008 @@
 
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
-void main() => runApp(const NovaStudyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const NovaApp());
+}
 
-const navy = Color(0xFF0A1024);
-const panel = Color(0xFF17213B);
-const purple = Color(0xFF8B78FF);
-const cyan = Color(0xFF64D9F7);
+const bg = Color(0xFF0A1024);
+const cardColor = Color(0xFF18233F);
+const violet = Color(0xFF8B78FF);
+const aqua = Color(0xFF64D9F7);
 
-class NovaStudyApp extends StatelessWidget {
-  const NovaStudyApp({super.key});
+const courses = [
+  'مبادئ المحاسبة المالية',
+  'مبادئ الاقتصاد',
+  'مبادئ الإدارة',
+  'لغة إنجليزية للمتخصصين',
+  'رياضيات تحليل الأعمال التجارية',
+  'التفكير الابتكاري',
+  'إدارة رياضية',
+];
+
+class NovaApp extends StatelessWidget {
+  const NovaApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        title: 'NOVA AI Study',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'NOVA AI Study',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: bg,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: violet,
           brightness: Brightness.dark,
-          scaffoldBackgroundColor: navy,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: purple,
-            brightness: Brightness.dark,
-          ),
-          fontFamily: 'Roboto',
         ),
-        home: const WelcomeScreen(),
-      );
+        appBarTheme: const AppBarTheme(
+          backgroundColor: bg,
+          foregroundColor: Colors.white,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          filled: true,
+          fillColor: cardColor,
+        ),
+      ),
+      home: const NovaHome(),
+    );
+  }
 }
 
-class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({super.key});
+class NovaHome extends StatefulWidget {
+  const NovaHome({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  State<NovaHome> createState() => _NovaHomeState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController controller;
+class _NovaHomeState extends State<NovaHome> {
+  int tab = 0;
+  int subject = 0;
+  bool busy = false;
+
+  Map<String, dynamic> data = {};
+
+  String get course => courses[subject];
+
+  Map<String, dynamic> get current {
+    return Map<String, dynamic>.from(
+      data[course] ?? {},
+    );
+  }
+
+  String field(String key) =>
+      (current[key] ?? '').toString();
 
   @override
   void initState() {
     super.initState();
-    controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..forward();
+    load();
   }
 
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('nova_study_data');
+
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          setState(() {
+            data = Map<String, dynamic>.from(decoded);
+          });
+        }
+      } catch (_) {}
+    }
   }
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(26),
-              child: FadeTransition(
-                opacity: CurvedAnimation(
-                  parent: controller,
-                  curve: Curves.easeIn,
-                ),
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: .75, end: 1).animate(
-                    CurvedAnimation(
-                      parent: controller,
-                      curve: Curves.elasticOut,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [purple, cyan],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: purple.withOpacity(.3),
-                              blurRadius: 45,
-                              spreadRadius: 7,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome,
-                          size: 70,
-                          color: navy,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      const Text(
-                        'NOVA AI',
-                        style: TextStyle(
-                          fontSize: 38,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 3,
-                        ),
-                      ),
-                      const Text(
-                        'STUDY',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: cyan,
-                          letterSpacing: 7,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'مساعدك الذكي للمذاكرة الجامعية',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      const SizedBox(height: 50),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () => Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const MainScreen(),
-                            ),
-                          ),
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('ابدأ المذاكرة'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: purple,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 17,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+  Future<void> saveField(String key, String value) async {
+    final item = current;
+    item[key] = value;
+    data[course] = item;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'nova_study_data',
+      jsonEncode(data),
+    );
+
+    if (mounted) setState(() {});
+  }
+
+  void message(String value) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> editField(
+    String key,
+    String title, {
+    String hint = '',
+  }) async {
+    final controller = TextEditingController(
+      text: field(key),
+    );
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: TextField(
+            controller: controller,
+            maxLines: 12,
+            minLines: 5,
+            textDirection: TextDirection.rtl,
+            decoration: InputDecoration(
+              hintText: hint,
             ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await saveField(key, controller.text);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
+              message('تم الحفظ');
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+  }
+
+  Future<void> importPdf() async {
+    if (busy) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        withData: true,
       );
-}
 
-const subjects = <({String ar, String en, IconData icon})>[
-  (
-    ar: 'مبادئ المحاسبة المالية',
-    en: 'Financial Accounting',
-    icon: Icons.account_balance_wallet_outlined,
-  ),
-  (
-    ar: 'مبادئ الاقتصاد',
-    en: 'Principles of Economics',
-    icon: Icons.show_chart,
-  ),
-  (
-    ar: 'مبادئ الإدارة',
-    en: 'Principles of Management',
-    icon: Icons.business_center_outlined,
-  ),
-  (
-    ar: 'لغة إنجليزية للمتخصصين',
-    en: 'English for Specialists',
-    icon: Icons.translate,
-  ),
-  (
-    ar: 'رياضيات تحليل الأعمال التجارية',
-    en: 'Business Analytics Mathematics',
-    icon: Icons.calculate_outlined,
-  ),
-  (
-    ar: 'التفكير الابتكاري',
-    en: 'Creative Thinking',
-    icon: Icons.lightbulb_outline,
-  ),
-  (
-    ar: 'إدارة رياضية',
-    en: 'Sports Management',
-    icon: Icons.sports_soccer,
-  ),
-];
+      if (result == null || result.files.isEmpty) return;
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+      setState(() => busy = true);
 
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
+      final file = result.files.first;
+      final Uint8List? bytes = file.bytes;
 
-class _MainScreenState extends State<MainScreen> {
-  int selected = 0;
+      if (bytes == null) {
+        message('تعذر قراءة الملف من الجهاز');
+        return;
+      }
 
-  final pages = const [
-    HomePage(),
-    StudyPage(),
-    ExamsPage(),
-    TermsPage(),
-  ];
+      final document = sf.PdfDocument(inputBytes: bytes);
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          backgroundColor: navy,
-          title: const Row(
+      String extracted = '';
+      int pages = 0;
+
+      try {
+        pages = document.pages.count;
+        extracted = sf.PdfTextExtractor(
+          document,
+        ).extractText();
+      } finally {
+        document.dispose();
+      }
+
+      if (extracted.trim().isEmpty) {
+        message(
+          'الملف غالبًا صور ممسوحة ضوئيًا، '
+          'ويحتاج OCR لاستخراج النص',
+        );
+        return;
+      }
+
+      await saveField(
+        'source',
+        '${field('source')}\n\n'
+        '=== ${file.name} | $pages pages ===\n'
+        '$extracted',
+      );
+
+      await saveField('filename', file.name);
+
+      message('تم استخراج النص من $pages صفحة');
+    } catch (e) {
+      message('تعذر فتح PDF: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  List<List<String>> parseRows(String key, int count) {
+    return field(key)
+        .split('\n')
+        .where((s) => s.trim().isNotEmpty)
+        .map((s) => s.split('|').map((x) => x.trim()).toList())
+        .where((row) => row.length >= count)
+        .toList();
+  }
+
+  Future<void> exportPdf() async {
+    if (busy) return;
+
+    setState(() => busy = true);
+
+    try {
+      final document = pw.Document();
+
+      // Arabic font is downloaded and cached by printing.
+      final arabic = await PdfGoogleFonts.notoNaskhArabicRegular();
+      final arabicBold = await PdfGoogleFonts.notoNaskhArabicBold();
+
+      final regular = pw.TextStyle(
+        font: arabic,
+        fontSize: 12,
+        color: PdfColors.black,
+        lineSpacing: 5,
+      );
+
+      final bold = pw.TextStyle(
+        font: arabicBold,
+        fontSize: 13,
+        color: PdfColors.black,
+      );
+
+      pw.Widget section(String title, String content) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            pw.SizedBox(height: 14),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(9),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.blue50,
+                borderRadius: pw.BorderRadius.circular(6),
+              ),
+              child: pw.Text(
+                title,
+                textDirection: pw.TextDirection.rtl,
+                style: pw.TextStyle(
+                  font: arabicBold,
+                  fontSize: 16,
+                  color: PdfColors.red800,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Text(
+              content.isEmpty
+                  ? 'لم يتم إضافة محتوى لهذا القسم.'
+                  : content,
+              textDirection: pw.TextDirection.rtl,
+              style: regular,
+            ),
+          ],
+        );
+      }
+
+      final terms = parseRows('terms', 2);
+      final questions = parseRows('questions', 7);
+
+      document.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(35),
+          theme: pw.ThemeData.withFont(
+            base: arabic,
+            bold: arabicBold,
+          ),
+          header: (_) => pw.Container(
+            alignment: pw.Alignment.center,
+            child: pw.Text(
+              'NOVA AI STUDY',
+              style: pw.TextStyle(
+                font: arabicBold,
+                fontSize: 12,
+                color: PdfColors.blue800,
+              ),
+            ),
+          ),
+          footer: (context) => pw.Align(
+            alignment: pw.Alignment.center,
+            child: pw.Text(
+              'NOVA AI Study  |  ${context.pageNumber}',
+              style: pw.TextStyle(
+                font: arabic,
+                fontSize: 9,
+                color: PdfColors.grey,
+              ),
+            ),
+          ),
+          build: (_) => [
+            pw.Center(
+              child: pw.Text(
+                course,
+                textDirection: pw.TextDirection.rtl,
+                style: pw.TextStyle(
+                  font: arabicBold,
+                  fontSize: 23,
+                  color: PdfColors.blue900,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Center(
+              child: pw.Text(
+                'شرح مبسط | عربي + English',
+                textDirection: pw.TextDirection.rtl,
+                style: bold,
+              ),
+            ),
+            section('الشرح والمفاهيم', field('notes')),
+            section('القوانين والقواعد', field('laws')),
+            section('الكلمات المفتاحية', field('keywords')),
+            if (terms.isNotEmpty) ...[
+              pw.SizedBox(height: 16),
+              pw.Text(
+                'Important Terms | المصطلحات',
+                style: pw.TextStyle(
+                  font: arabicBold,
+                  fontSize: 17,
+                  color: PdfColors.red800,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.TableHelper.fromTextArray(
+                headers: ['English', 'العربي', 'Explanation'],
+                data: terms.map((r) => [
+                  r[0],
+                  r[1],
+                  r.length > 2 ? r.sublist(2).join(' | ') : '',
+                ]).toList(),
+                headerStyle: bold,
+                cellStyle: regular,
+                headerDecoration: const pw.BoxDecoration(
+                  color: PdfColors.blue100,
+                ),
+                cellPadding: const pw.EdgeInsets.all(6),
+              ),
+            ],
+            if (questions.isNotEmpty) ...[
+              pw.SizedBox(height: 16),
+              pw.Text(
+                'Practice Questions | أسئلة التدريب',
+                style: pw.TextStyle(
+                  font: arabicBold,
+                  fontSize: 17,
+                  color: PdfColors.red800,
+                ),
+              ),
+              ...questions.asMap().entries.map((entry) {
+                final q = entry.value;
+                final answer = int.tryParse(q[5]) ?? 1;
+                final index = answer.clamp(1, 4);
+
+                return pw.Column(
+                  crossAxisAlignment:
+                      pw.CrossAxisAlignment.stretch,
+                  children: [
+                    pw.SizedBox(height: 12),
+                    pw.Text(
+                      'Q${entry.key + 1}. ${q[0]}',
+                      style: pw.TextStyle(
+                        font: arabicBold,
+                        fontSize: 13,
+                        color: PdfColors.red800,
+                      ),
+                    ),
+                    for (int i = 1; i <= 4; i++)
+                      pw.Text(
+                        '${String.fromCharCode(64 + i)}. ${q[i]}',
+                        style: regular,
+                      ),
+                    pw.Text(
+                      'Answer: ${String.fromCharCode(64 + index)}. ${q[index]}',
+                      style: bold,
+                    ),
+                    pw.Text(
+                      'الشرح: ${q.sublist(6).join(' | ')}',
+                      textDirection: pw.TextDirection.rtl,
+                      style: regular,
+                    ),
+                  ],
+                );
+              }),
+            ],
+          ],
+        ),
+      );
+
+      await Printing.sharePdf(
+        bytes: await document.save(),
+        filename: 'nova_study_${subject + 1}.pdf',
+      );
+
+      message('تم تجهيز ملف PDF للمشاركة');
+    } catch (e) {
+      message('فشل تصدير PDF: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Widget panel(Widget child) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withOpacity(.06),
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget action(
+    String title,
+    IconData icon,
+    VoidCallback onTap, {
+    String? subtitle,
+  }) {
+    return panel(
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, color: aqua, size: 30),
+        title: Text(title),
+        subtitle: subtitle == null ? null : Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget subjectPicker() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: DropdownButtonFormField<int>(
+        value: subject,
+        isExpanded: true,
+        decoration: const InputDecoration(
+          labelText: 'اختار المادة',
+          prefixIcon: Icon(Icons.school, color: aqua),
+        ),
+        items: List.generate(
+          courses.length,
+          (i) => DropdownMenuItem(
+            value: i,
+            child: Text(
+              courses[i],
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        onChanged: (v) {
+          if (v != null) setState(() => subject = v);
+        },
+      ),
+    );
+  }
+
+  Widget homePage() {
+    return Column(
+      children: [
+        panel(
+          const Column(
             children: [
-              Icon(Icons.auto_awesome, color: cyan),
-              SizedBox(width: 10),
+              Icon(Icons.auto_awesome, color: aqua, size: 48),
+              SizedBox(height: 12),
               Text(
-                'NOVA AI Study',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                'NOVA AI STUDY',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'مساعد المذاكرة الجامعية',
+                style: TextStyle(color: Colors.white70),
+              ),
+              SizedBox(height: 5),
+              Text(
+                'بدون حساب أو مفتاح AI',
+                style: TextStyle(color: aqua),
               ),
             ],
           ),
         ),
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 320),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(.06, 0),
-                end: Offset.zero,
-              ).animate(animation),
-              child: child,
-            ),
-          ),
-          child: KeyedSubtree(
-            key: ValueKey(selected),
-            child: pages[selected],
+        const SizedBox(height: 8),
+        ...List.generate(
+          courses.length,
+          (i) => action(
+            courses[i],
+            Icons.menu_book_outlined,
+            () => setState(() {
+              subject = i;
+              tab = 1;
+            }),
           ),
         ),
-        bottomNavigationBar: NavigationBar(
-          backgroundColor: panel,
-          indicatorColor: purple.withOpacity(.35),
-          selectedIndex: selected,
-          onDestinationSelected: (index) {
-            setState(() => selected = index);
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'الرئيسية',
+      ],
+    );
+  }
+
+  Widget studyPage() {
+    return Column(
+      children: [
+        subjectPicker(),
+        action(
+          'رفع وقراءة PDF',
+          Icons.picture_as_pdf,
+          importPdf,
+          subtitle: field('filename').isEmpty
+              ? 'اختار محاضرة من موبايلك'
+              : 'آخر ملف: ${field('filename')}',
+        ),
+        action(
+          'عرض النص المستخرج',
+          Icons.article_outlined,
+          () => editField(
+            'source',
+            'نص المحاضرات المستخرج',
+          ),
+        ),
+        action(
+          'إضافة الشرح بالعربي والإنجليزي',
+          Icons.edit_note,
+          () => editField(
+            'notes',
+            'شرح المحاضرات',
+            hint: 'اكتب عنوان الموضوع ثم شرحه وأمثلة عليه...',
+          ),
+        ),
+        action(
+          'القوانين والقواعد المهمة',
+          Icons.calculate,
+          () => editField(
+            'laws',
+            'القوانين والقواعد',
+          ),
+        ),
+        action(
+          'الكلمات والعبارات المفتاحية',
+          Icons.key,
+          () => editField(
+            'keywords',
+            'الكلمات المفتاحية',
+          ),
+        ),
+        action(
+          'جدول المصطلحات',
+          Icons.table_chart,
+          () => editField(
+            'terms',
+            'المصطلحات',
+            hint:
+                'Assets | الأصول | موارد اقتصادية\n'
+                'Liabilities | الالتزامات | ديون المنشأة',
+          ),
+          subtitle: 'كل مصطلح في سطر وبين الأعمدة علامة |',
+        ),
+        action(
+          'إضافة أسئلة الامتحانات',
+          Icons.quiz_outlined,
+          () => editField(
+            'questions',
+            'بنك الأسئلة',
+            hint:
+                'What is an asset?|Cash|Loan|Expense|Loss|1|'
+                'النقدية أصل لأنها مورد اقتصادي',
+          ),
+          subtitle: 'السؤال | 4 اختيارات | رقم الإجابة | الشرح',
+        ),
+        action(
+          'تصدير مذكرة PDF ملونة',
+          Icons.file_download_outlined,
+          exportPdf,
+        ),
+        if (busy)
+          const Padding(
+            padding: EdgeInsets.all(18),
+            child: CircularProgressIndicator(),
+          ),
+      ],
+    );
+  }
+
+  Widget termsPage() {
+    final rows = parseRows('terms', 2);
+
+    return Column(
+      children: [
+        subjectPicker(),
+        action(
+          'إضافة أو تعديل المصطلحات',
+          Icons.edit,
+          () => editField(
+            'terms',
+            'جدول المصطلحات',
+            hint: 'English | العربي | الشرح',
+          ),
+        ),
+        if (rows.isEmpty)
+          panel(
+            const Text(
+              'لسه مفيش مصطلحات محفوظة للمادة دي.',
+              textAlign: TextAlign.center,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.menu_book_outlined),
-              selectedIcon: Icon(Icons.menu_book),
-              label: 'المذاكرة',
+          ),
+        ...rows.map(
+          (row) => panel(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  row[0],
+                  style: const TextStyle(
+                    color: aqua,
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  row[1],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
+                ),
+                if (row.length > 2) ...[
+                  const SizedBox(height: 7),
+                  Text(row.sublist(2).join(' | ')),
+                ],
+              ],
             ),
-            NavigationDestination(
-              icon: Icon(Icons.quiz_outlined),
-              selectedIcon: Icon(Icons.quiz),
-              label: 'الامتحانات',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.style_outlined),
-              selectedIcon: Icon(Icons.style),
-              label: 'مصطلحات',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget examPage() {
+    final rows = parseRows('questions', 7);
+
+    return Column(
+      children: [
+        subjectPicker(),
+        panel(
+          Column(
+            children: [
+              const Icon(
+                Icons.fact_check,
+                color: aqua,
+                size: 54,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Practice Exam',
+                style: TextStyle(
+                  fontSize: 23,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text('عدد الأسئلة المتاحة: ${rows.length}'),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: rows.isEmpty
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ExamScreen(
+                                questions: rows,
+                                subject: course,
+                              ),
+                            ),
+                          ),
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('ابدأ الامتحان'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (rows.isEmpty)
+          const Text(
+            'أضف أسئلة من صفحة المذاكرة أولًا.',
+            textAlign: TextAlign.center,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pages = [
+      homePage(),
+      studyPage(),
+      examPage(),
+      termsPage(),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'NOVA AI Study',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: Icon(Icons.auto_awesome, color: aqua),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(.05, .04),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey(tab),
+                child: pages[tab],
+              ),
             ),
           ],
         ),
-      );
+      ),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: cardColor,
+        selectedIndex: tab,
+        indicatorColor: violet.withOpacity(.35),
+        onDestinationSelected: (v) {
+          setState(() => tab = v);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            label: 'الرئيسية',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_book),
+            label: 'المذاكرة',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.quiz),
+            label: 'امتحانات',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.translate),
+            label: 'مصطلحات',
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class FadeInTile extends StatefulWidget {
-  final Widget child;
-  final int index;
+class ExamScreen extends StatefulWidget {
+  final List<List<String>> questions;
+  final String subject;
 
-  const FadeInTile({
+  const ExamScreen({
     super.key,
-    required this.child,
-    this.index = 0,
+    required this.questions,
+    required this.subject,
   });
 
   @override
-  State<FadeInTile> createState() => _FadeInTileState();
+  State<ExamScreen> createState() => _ExamScreenState();
 }
 
-class _FadeInTileState extends State<FadeInTile>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController controller;
+class _ExamScreenState extends State<ExamScreen> {
+  late List<List<String>> questions;
+  final Map<int, int> answers = {};
+  bool finished = false;
 
   @override
   void initState() {
     super.initState();
-    controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 450 + widget.index * 90),
-    )..forward();
+    questions = List<List<String>>.from(widget.questions)
+      ..shuffle();
+  }
+
+  int get score {
+    int total = 0;
+
+    for (int i = 0; i < questions.length; i++) {
+      final correct = int.tryParse(questions[i][5]) ?? 0;
+      if (answers[i] == correct) total++;
+    }
+
+    return total;
   }
 
   @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => FadeTransition(
-        opacity: CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeIn,
-        ),
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, .13),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(
-              parent: controller,
-              curve: Curves.easeOutCubic,
-            ),
-          ),
-          child: widget.child,
-        ),
-      );
-}
-
-class NovaCard extends StatelessWidget {
-  final Widget child;
-
-  const NovaCard({
-    super.key,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: panel,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withOpacity(.07),
-          ),
-        ),
-        child: child,
-      );
-}
-
-void upcoming(BuildContext context, String feature) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('ميزة $feature هنفعّلها في المرحلة القادمة'),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.subject)),
+      body: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          FadeInTile(
-            child: Container(
-              padding: const EdgeInsets.all(24),
+          if (finished)
+            Container(
+              padding: const EdgeInsets.all(22),
+              margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF4233A2),
-                    Color(0xFF176A91),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(24),
+                color: cardColor,
+                borderRadius: BorderRadius.circular(18),
               ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
                 children: [
+                  const Icon(
+                    Icons.emoji_events,
+                    color: aqua,
+                    size: 50,
+                  ),
+                  const SizedBox(height: 12),
                   Text(
-                    'أهلاً بيك في NOVA ✨',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(
+                    'نتيجتك: $score / ${questions.length}',
+                    style: const TextStyle(
                       fontSize: 25,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
-                    'ذاكر بذكاء، افهم بالعربي، واختبر نفسك بالإنجليزي.',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(fontSize: 16),
+                    '${(score / questions.length * 100).round()}%',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      color: aqua,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'موادك الدراسية',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...List.generate(subjects.length, (i) {
-            final subject = subjects[i];
+          ...questions.asMap().entries.map((entry) {
+            final index = entry.key;
+            final q = entry.value;
+            final correct = int.tryParse(q[5]) ?? 1;
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: FadeInTile(
-                index: i,
-                child: NovaCard(
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: purple.withOpacity(.17),
-                          borderRadius: BorderRadius.circular(14),
+            return Card(
+              color: cardColor,
+              margin: const EdgeInsets.only(bottom: 14),
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Q${index + 1}. ${q[0]}',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: aqua,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...List.generate(4, (i) {
+                      final value = i + 1;
+
+                      return RadioListTile<int>(
+                        dense: true,
+                        title: Text(
+                          '${String.fromCharCode(65 + i)}. ${q[value]}',
                         ),
-                        child: Icon(
-                          subject.icon,
-                          color: cyan,
-                          size: 27,
+                        value: value,
+                        groupValue: answers[index],
+                        onChanged: finished
+                            ? null
+                            : (v) {
+                                setState(() {
+                                  if (v != null) answers[index] = v;
+                                });
+                              },
+                      );
+                    }),
+                    if (finished) ...[
+                      const Divider(),
+                      Text(
+                        'Correct answer: '
+                        '${String.fromCharCode(64 + correct.clamp(1, 4))}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.greenAccent,
                         ),
                       ),
-                      const SizedBox(width: 13),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              subject.ar,
-                              textDirection: TextDirection.rtl,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              subject.en,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'الشرح: ${q.sublist(6).join(' | ')}',
+                        textDirection: TextDirection.rtl,
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             );
           }),
-        ],
-      );
-}
-
-class StudyPage extends StatefulWidget {
-  const StudyPage({super.key});
-
-  @override
-  State<StudyPage> createState() => _StudyPageState();
-}
-
-class _StudyPageState extends State<StudyPage> {
-  int subjectIndex = 0;
-
-  @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text(
-            'مركز المذاكرة',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'اختار المادة، وبعدها هنضيف رفع المحاضرات وشرحها.',
-            textAlign: TextAlign.right,
-            style: TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 24),
-          NovaCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'المادة',
-                  textAlign: TextAlign.right,
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: subjectIndex,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                  ),
-                  items: List.generate(
-                    subjects.length,
-                    (i) => DropdownMenuItem(
-                      value: i,
-                      child: Text(
-                        subjects[i].ar,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => subjectIndex = value);
+          FilledButton.icon(
+            onPressed: finished
+                ? () {
+                    setState(() {
+                      answers.clear();
+                      questions.shuffle();
+                      finished = false;
+                    });
+                  }
+                : () {
+                    if (answers.length != questions.length) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'جاوب على كل الأسئلة الأول',
+                          ),
+                        ),
+                      );
+                      return;
                     }
+                    setState(() => finished = true);
                   },
-                ),
-                const SizedBox(height: 22),
-                const Icon(
-                  Icons.picture_as_pdf_outlined,
-                  size: 65,
-                  color: cyan,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'رفع ملف PDF',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'رفع الملفات واستخراج المحتوى سيتم تفعيله بعد ربط خدمات معالجة PDF.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => upcoming(context, 'رفع PDF'),
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('اختيار ملف PDF'),
-                ),
-              ],
+            icon: Icon(
+              finished ? Icons.refresh : Icons.check_circle,
+            ),
+            label: Text(
+              finished ? 'إعادة الامتحان' : 'تصحيح الامتحان',
             ),
           ),
-          const SizedBox(height: 18),
-          const NovaCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'قريبًا في مركز المذاكرة',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  '• شرح عربي مفصل لكل محاضرة\n'
-                  '• ملخصات ومفاهيم مهمة\n'
-                  '• أسئلة بالإنجليزي وإجابات مشروحة\n'
-                  '• تصدير مذكرة PDF',
-                  textDirection: TextDirection.rtl,
-                  style: TextStyle(height: 1.9),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 25),
         ],
-      );
-}
-
-class ExamsPage extends StatefulWidget {
-  const ExamsPage({super.key});
-
-  @override
-  State<ExamsPage> createState() => _ExamsPageState();
-}
-
-class _ExamsPageState extends State<ExamsPage> {
-  String exam = 'Midterm';
-  int count = 20;
-
-  @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text(
-            'الاختبارات الذكية',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          NovaCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(
-                  Icons.fact_check_outlined,
-                  color: cyan,
-                  size: 58,
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'نوع الامتحان',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 17),
-                ),
-                const SizedBox(height: 10),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
-                      value: 'Midterm',
-                      label: Text('Midterm'),
-                    ),
-                    ButtonSegment(
-                      value: 'Final',
-                      label: Text('Final'),
-                    ),
-                  ],
-                  selected: {exam},
-                  onSelectionChanged: (values) {
-                    setState(() => exam = values.first);
-                  },
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'عدد الأسئلة: $count',
-                  textAlign: TextAlign.right,
-                ),
-                Slider(
-                  value: count.toDouble(),
-                  min: 10,
-                  max: 50,
-                  divisions: 8,
-                  label: '$count',
-                  onChanged: (v) {
-                    setState(() => count = v.round());
-                  },
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'الأسئلة بالإنجليزي، والتصحيح والشرح بالعربي والإنجليزي.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: () => upcoming(
-                    context,
-                    'توليد امتحان $exam',
-                  ),
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('إنشاء الامتحان'),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-}
-
-class TermsPage extends StatelessWidget {
-  const TermsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text(
-            'المصطلحات والمفاهيم',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 18),
-          const NovaCard(
-            child: Column(
-              children: [
-                Icon(
-                  Icons.style_outlined,
-                  color: cyan,
-                  size: 60,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'قاموس NOVA الذكي',
-                  style: TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'بعد رفع المحاضرات، هتظهر هنا أهم الكلمات الإنجليزية وترجمتها وشرحها بالعربي مع أمثلة وكروت مراجعة.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            'مثال على شكل المصطلحات',
-            textAlign: TextAlign.right,
-            style: TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 12),
-          const NovaCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'Assets',
-                  style: TextStyle(
-                    fontSize: 21,
-                    color: cyan,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 7),
-                Text(
-                  'الأصول',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 7),
-                Text(
-                  'الموارد الاقتصادية اللي بتمتلكها المنشأة أو بتتحكم فيها والمتوقع تحقق منها منفعة مستقبلية.',
-                  textAlign: TextAlign.right,
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
+      ),
+    );
+  }
 }
